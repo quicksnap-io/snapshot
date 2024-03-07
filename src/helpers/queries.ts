@@ -533,3 +533,19 @@ export const DELEGATE_VOTES_AND_PROPOSALS = gql`
     }
   }
 `;
+
+
+export const PROPOSAL_REDUCED_QUERY = gql`
+  query Proposal($id: String!) {
+    proposal(id: $id) {
+      title
+      choices
+      network
+      type
+      space {
+        id
+        name
+      }
+    }
+  }
+`;

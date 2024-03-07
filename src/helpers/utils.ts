@@ -191,3 +191,35 @@ export function toChecksumAddress(address: string) {
     return address;
   }
 }
+
+export function commify(number: any, decimals?: number | undefined) {
+  if (!decimals) {
+    const parts = String(number).split('.');
+    const wholePart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const decimalPart = parts[1] ? `.${parts[1]}` : '';
+    return `${wholePart}${decimalPart}`;
+  } else {
+    return number
+      .toFixed(decimals)
+      .toString()
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+}
+
+export function getDecimals(amount) {
+  if (amount % 1 != 0) return amount.toString().split('.')[1].length;
+  return 0;
+}
+
+
+export function addIncentiveFee(amount) {
+  const decimals = getDecimals(amount);
+
+  let totalAmount = (amount / 95) * 100;
+
+  if (getDecimals(totalAmount) > decimals) {
+    totalAmount = parseFloat(totalAmount.toFixed(decimals + 1));
+  }
+
+  return totalAmount;
+}

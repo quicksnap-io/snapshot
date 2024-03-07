@@ -27,6 +27,7 @@ export default defineConfig({
   optimizeDeps: {
     esbuildOptions: {
       target: 'esnext'
-    }
+    },
+    include: ['viewerjs']
   }
 });
