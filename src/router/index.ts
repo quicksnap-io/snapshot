@@ -25,7 +25,6 @@ import SpaceDelegates from '@/views/SpaceDelegates.vue';
 import SpaceDelegate from '@/views/SpaceDelegate.vue';
 
 import PaymentNetwork from '@/views/PaymentNetwork.vue';
-import Rewards from '@/views/Rewards.vue';
 
 // The frontend shows all spaces or just a single one, when being accessed
 // through that space's custom domain.
@@ -124,7 +123,6 @@ if (domain) {
   // prefix space routes with space domain (/:key).
   routes.push(
     { path: '/', name: 'home', component: ExploreView },
-    { path: '/rewards', name: 'rewards', component: Rewards },
     {
       path: '/setup/:ens?',
       name: 'setup',

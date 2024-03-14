@@ -8,16 +8,22 @@ import {
   tokenData,
   getTokenBalance,
   getRawTokenBalance
-} from '@/helpers/quicksnapContracts';
-import { Proposal } from '@/helpers/interfaces';
+} from '../helpers/quicksnapContracts';
+import { Proposal } from '../helpers/interfaces';
 import { isAddress } from '@ethersproject/address';
 import { call, clone } from '@snapshot-labs/snapshot.js/src/utils';
 import { JsonRpcProvider } from '@ethersproject/providers';
-import { ERC20ABI } from '@/helpers/abi';
-import { supportedChain } from '@/helpers/supportedChains';
-import { getDecimals } from '@/helpers/utils';
+import { ERC20ABI } from '../helpers/abi';
+import { supportedChain } from '../helpers/supportedChains';
+import { getDecimals } from '../helpers/utils';
+import {useConnectButton} from "../composables/onboard"
+
 
 const { connectedChain } = useConnectButton();
+
+// export default {
+//   name:"ModalSnapshotIncentive"
+// };
 
 const DEFAULT_TOKEN = {
   name: '',

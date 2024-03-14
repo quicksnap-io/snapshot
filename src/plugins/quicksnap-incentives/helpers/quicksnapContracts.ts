@@ -1,20 +1,22 @@
-import angleGauge from '@/abi/angleGauge.json';
-import bribeV3 from '@/abi/bribev3.json';
-import quicksnap from '@/abi/QuickSnap.json';
-import erc20 from '@/abi/erc20.json';
-import gauge from '@/abi/gauge.json';
-import { getContractName } from '@/helpers/etherscan';
-import { getTokenInfo } from '@/helpers/rewards';
 import { ApolloClient, InMemoryCache } from '@apollo/client/core';
 import { BigNumber } from '@ethersproject/bignumber';
+import angleGauge from '../abi/angleGauge.json';
+import bribeV3 from '../abi/bribev3.json';
+import quicksnap from '../abi/QuickSnap.json';
+import erc20 from '../abi/erc20.json';
+import gauge from '../abi/gauge.json';
+import { getContractName } from './etherscan';
+import { getTokenInfo } from './rewards';
 import { ethers } from 'ethers';
-import GaugeNames from '../../config/GaugeNames.json';
-import { PROPOSAL_REDUCED_QUERY } from '@/helpers/queries';
+import GaugeNames from '../config/GaugeNames.json';
+import { PROPOSAL_REDUCED_QUERY } from './queries';
 import {
   CURRENT_SNAPSHOT_INCENTIVES,
   INCENTIVES_BY_PROPOSAL_QUERY
-} from '@/helpers/graphQueries';
-import { addIncentiveFee } from '@/helpers/utils';
+} from './graphQueries';
+import { addIncentiveFee } from './utils';
+import {useConnectButton} from "../composables/onboard"
+
 
 const { userAddress, ethersProvider } = useConnectButton();
 

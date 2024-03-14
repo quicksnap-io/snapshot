@@ -6,7 +6,7 @@ import { init as onboardInit } from '@web3-onboard/vue';
 import injectedModule from '@web3-onboard/injected-wallets';
 import { ProviderLabel } from '@web3-onboard/injected-wallets';
 import walletConnectModule from '@web3-onboard/walletconnect';
-import { supportedChain } from '@/helpers/supportedChains';
+import { supportedChain } from '../helpers/supportedChains';
 
 const injected = injectedModule({
   displayUnavailable: [ProviderLabel.MetaMask, ProviderLabel.Trust],

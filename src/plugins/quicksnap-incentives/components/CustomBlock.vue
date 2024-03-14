@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { useWeb3 } from '@/composables/useWeb3';
-import { getIncentivesForProposal } from '@/helpers/quicksnapContracts';
-import voting from '@snapshot-labs/snapshot.js/src/voting';
-import { ExtendedSpace, Proposal, Results } from '@/helpers/interfaces';
 import { ref } from 'vue';
-import { commify } from '@/helpers/utils';
-import ModalSnapshotIncentive from '@/components/ModalSnapshotIncentive.vue';
-import { supportedChain } from '@/helpers/supportedChains';
+import { useWeb3 } from '@/composables/useWeb3';
+import voting from '@snapshot-labs/snapshot.js/src/voting';
+import { getIncentivesForProposal } from '../helpers/quicksnapContracts';
+import { ExtendedSpace, Proposal, Results } from '../helpers/interfaces';
+import { commify } from '../helpers/utils';
+import ModalSnapshotIncentive from './ModalSnapshotIncentive.vue';
+import ModalRewardIncentives from './ModalRewardIncentives.vue';
+import { supportedChain } from '../helpers/supportedChains';
+import { useConnectButton } from '../composables/onboard';
 
 const props = defineProps<{ space: ExtendedSpace; proposal: Proposal }>();
 const emit = defineEmits(['reload-proposal']);
@@ -46,6 +48,7 @@ const results = ref<Results | null>(null);
 let modalIncentiveOpen = ref(false);
 let currentIncentives = ref([]);
 let incentivesLoading = ref(false);
+let modalReward = ref(false);
 
 const isAdmin = computed(() => {
   const admins = (props.space.admins || []).map(admin => admin.toLowerCase());
@@ -73,8 +76,8 @@ function clickVote() {
   !web3.value.account
     ? (modalAccountOpen.value = true)
     : !termsAccepted.value && props.space.terms
-    ? (modalTermsOpen.value = true)
-    : (modalOpen.value = true);
+      ? (modalTermsOpen.value = true)
+      : (modalOpen.value = true);
 }
 
 function reloadProposal() {
@@ -123,6 +126,10 @@ async function openIncentiveModal() {
   modalIncentiveOpen.value = true;
 }
 
+async function openRewardModal() {
+  modalReward.value = true;
+}
+
 async function getIncentives() {
   incentivesLoading.value = true;
   currentIncentives.value = await getIncentivesForProposal(
@@ -146,53 +153,49 @@ onMounted(() => {
 
 onMounted(() => setMessageVisibility(props.proposal.flagged));
 </script>
-    <template #sidebar-right>
-      <div v-if="!isMessageVisible" class="mt-4 space-y-4 lg:mt-0">
-        
-        <BaseBlock :loading="incentivesLoading" title="Incentives">
-          <p class="mb-4">
-            You can add a reward for voters that choose the desired option
-          </p>
-          <div v-if="currentIncentives.length > 0" class="mb-4">
-            <h6>Current Incentives</h6>
-            <div
-              v-for="incentive in currentIncentives"
-              :key="incentive"
-              class="my-3"
-            >
-              <b>Vote - </b> <b>{{ incentive?.option }}</b>
-              <span class="total_incentive mt-4 flex justify-between"
-                ><b>Token </b>
-                <b
-                  >{{ commify(incentive.amount) }} {{ incentive.symbol }}</b
-                ></span
-              >
-              <span class="total_rewards flex justify-between"
-                ><b>Total Rewards </b>
-                <b>${{ commify(incentive.dollarAmount, 3) }}</b></span
-              >
-            </div>
-          </div>
-          <BaseButton
-            class="block w-full"
-            primary
-            @click="openIncentiveModal()"
-            >Add Incentive
-          </BaseButton>
-          <br />
-          <router-link :to="{ name: 'rewards',params: { key: space.id } }">
-            <BaseButton class="block w-full" primary>Check rewards</BaseButton>
-          </router-link>
-        
-        </BaseBlock>
+<template #sidebar-right>
+  <div v-if="!isMessageVisible" class="mt-4 space-y-4 lg:mt-0">
+    <BaseBlock :loading="incentivesLoading" title="Incentives">
+      <p class="mb-4">
+        You can add a reward for voters that choose the desired option
+      </p>
+      <div v-if="currentIncentives.length > 0" class="mb-4">
+        <h6>Current Incentives</h6>
+        <div
+          v-for="incentive in currentIncentives"
+          :key="incentive"
+          class="my-3"
+        >
+          <b>Vote - </b> <b>{{ incentive?.option }}</b>
+          <span class="total_incentive mt-4 flex justify-between"
+            ><b>Token </b>
+            <b>{{ commify(incentive.amount) }} {{ incentive.symbol }}</b></span
+          >
+          <span class="total_rewards flex justify-between"
+            ><b>Total Rewards </b>
+            <b>${{ commify(incentive.dollarAmount, 3) }}</b></span
+          >
+        </div>
       </div>
-      <ModalSnapshotIncentive
-        :proposal="proposal"
-        :open="modalIncentiveOpen"
-        @close="modalIncentiveOpen = false"
-      />
-    </template>
- 
+      <BaseButton class="block w-full" primary @click="openIncentiveModal()"
+        >Add Incentive
+      </BaseButton>
+      <br />
+      <BaseButton class="block w-full" primary @click="openRewardModal()"
+        >Check rewards</BaseButton
+      >
+    </BaseBlock>
+  </div>
+  <ModalSnapshotIncentive
+    :proposal="proposal"
+    :open="modalIncentiveOpen"
+    @close="modalIncentiveOpen = false"
+  />
+  <ModalRewardIncentives
+    :open="modalReward"
+    @close="modalReward = false"
+  />
+</template>
 
 <style scoped>
 .important-notice {

@@ -1,10 +1,12 @@
-import erc20 from '@/abi/erc20.json';
 import { BigNumber } from '@ethersproject/bignumber';
+import { ApolloClient, InMemoryCache } from '@apollo/client/core';
 import { ethers } from 'ethers';
 import gql from 'graphql-tag';
-import { ApolloClient, InMemoryCache } from '@apollo/client/core';
-import { tokenData } from '@/helpers/quicksnapContracts';
-import merkle from '@/abi/merkle.json';
+import { tokenData } from './quicksnapContracts';
+import erc20 from '../abi/erc20.json';
+import merkle from '../abi/merkle.json';
+import {useConnectButton} from "../composables/onboard"
+
 
 const MERKLE_ADDRESS = import.meta.env.VITE_MERKLE_ADDRESS;
 const { ethersProvider, userAddress } = useConnectButton();
