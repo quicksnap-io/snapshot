@@ -88,7 +88,6 @@
     "autoprefixer": "^10.4.15",
     "env-cmd": "^10.1.0",
     "eslint": "^8.46.0",
-    "ethers": "^5.7.0",
     "happy-dom": "^10.11.0",
     "husky": "^8.0.3",
     "patch-package": "^7.0.0",
