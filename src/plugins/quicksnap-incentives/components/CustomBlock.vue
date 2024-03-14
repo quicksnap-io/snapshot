@@ -9,6 +9,7 @@ import ModalSnapshotIncentive from './ModalSnapshotIncentive.vue';
 import ModalRewardIncentives from './ModalRewardIncentives.vue';
 import { supportedChain } from '../helpers/supportedChains';
 import { useConnectButton } from '../composables/onboard';
+import BaseButton from "@/plugins/quicksnap-incentives/components/BaseButton.vue";
 
 const props = defineProps<{ space: ExtendedSpace; proposal: Proposal }>();
 const emit = defineEmits(['reload-proposal']);

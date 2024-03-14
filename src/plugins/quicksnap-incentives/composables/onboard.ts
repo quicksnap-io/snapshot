@@ -1,5 +1,5 @@
 // onboard.ts
-import { ref, onMounted, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { ethers } from 'ethers';
 import { useOnboard } from '@web3-onboard/vue';
 import { init as onboardInit } from '@web3-onboard/vue';
@@ -7,6 +7,11 @@ import injectedModule from '@web3-onboard/injected-wallets';
 import { ProviderLabel } from '@web3-onboard/injected-wallets';
 import walletConnectModule from '@web3-onboard/walletconnect';
 import { supportedChain } from '../helpers/supportedChains';
+import {
+  DEFAULT_MERKLE_ADDRESS,
+  DEFAULT_QUICKSNAP_ADDRESS, DEFAULT_WEB3_RPC,
+  GRAPH_ENDPOINT
+} from "@/plugins/quicksnap-incentives/helpers/constants";
 
 const injected = injectedModule({
   displayUnavailable: [ProviderLabel.MetaMask, ProviderLabel.Trust],
@@ -85,43 +90,63 @@ const walletConnect = walletConnectModule({
   dappUrl: 'https://app.quicksnap.finance'
 });
 
-const rpcUrl = import.meta.env.VITE_WEB3_ENDPOINT;
+const rpcUrl = DEFAULT_WEB3_RPC;
+
+let chains;
+if (import.meta.env.VITE_ENV === 'production') {
+  chains = [
+    {
+      id: 1,
+      token: 'ETH',
+      label: 'Ethereum Mainnet',
+      rpcUrl
+    },
+    {
+      id: 42161,
+      token: 'ARB-ETH',
+      label: 'Arbitrum One',
+      rpcUrl: 'https://arb1.arbitrum.io/rpc'
+    },
+    {
+      id: 10,
+      token: 'OP-ETH',
+      label: 'Optimism',
+      rpcUrl: 'https://mainnet.optimism.io'
+    }
+  ];
+} else {
+  chains = [
+    {
+      id: 1337,
+      token: 'ETH',
+      label: 'Local fork',
+      rpcUrl
+    },
+    {
+      id: 11155111,
+      token: 'SepoliaETH',
+      label: 'Ethereum Sepolia',
+      rpcUrl: 'https://ethereum-sepolia.publicnode.com'
+    },
+    {
+      id: 421614,
+      token: 'ARB-ETH',
+      label: 'Arbitrum Sepolia',
+      rpcUrl: 'https://arbitrum-sepolia.blockpi.network/v1/rpc/public'
+    },
+    {
+      id: 11155420,
+      token: 'OP-ETH',
+      label: 'Optimism Sepolia',
+      rpcUrl: 'https://sepolia.optimism.io'
+    }
+  ];
+}
 
 onboardInit({
   appMetadata,
   wallets: [injected, walletConnect],
-  chains: [
-    {
-      id: '0x1',
-      token: 'ETH',
-      label: 'Ethereum Mainnet',
-      rpcUrl
-    }
-    // {
-    //   id: 421614,
-    //   token: 'ARB-ETH',
-    //   label: 'Arbitrum One',
-    //   rpcUrl: 'https://arbitrum-sepolia.blockpi.network/v1/rpc/public'
-    // },
-    // {
-    //   id: '0xa4ba',
-    //   token: 'ARB',
-    //   label: 'Arbitrum Nova',
-    //   rpcUrl: 'https://nova.arbitrum.io/rpc'
-    // },
-    // {
-    //   id: '0x89',
-    //   token: 'MATIC',
-    //   label: 'Polygon',
-    //   rpcUrl: 'https://rpc-mainnet.maticvigil.com/'
-    // },
-    // {
-    //   id: '0xaa36a7',
-    //   token: 'ETH',
-    //   label: 'Sepolia',
-    //   rpcUrl
-    // }
-  ],
+  chains,
   accountCenter: {
     desktop: {
       position: 'bottomRight',
@@ -150,7 +175,6 @@ export function useConnectButton() {
     connectedWallet,
     connectedChain,
     setChain,
-    getChain,
     disconnectConnectedWallet,
     connectingWallet
   } = useOnboard();
@@ -169,9 +193,9 @@ export function useConnectButton() {
       name: 'Ethereum',
       imageUrl:
         'https://s2.coinmarketcap.com/static/img/coins/200x200/1027.png',
-      merkleAddress: `${import.meta.env.VITE_MERKLE_ADDRESS}`,
-      quicksnapAddress: `${import.meta.env.VITE_QUICKSNAP_ADDRESS}`,
-      graphEndpoint: `${import.meta.env.VITE_GRAPH_ENDPOINT}`
+      merkleAddress: DEFAULT_MERKLE_ADDRESS,
+      quicksnapAddress: DEFAULT_QUICKSNAP_ADDRESS,
+      graphEndpoint: GRAPH_ENDPOINT
     };
 
     const chainData = supportedChain.get(

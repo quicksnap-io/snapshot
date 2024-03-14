@@ -16,14 +16,13 @@ import { JsonRpcProvider } from '@ethersproject/providers';
 import { ERC20ABI } from '../helpers/abi';
 import { supportedChain } from '../helpers/supportedChains';
 import { getDecimals } from '../helpers/utils';
-import {useConnectButton} from "../composables/onboard"
+import {useConnectButton} from "../composables/onboard";
+import InputString from "@/plugins/quicksnap-incentives/components/InputString.vue";
+import BaseButton from "@/plugins/quicksnap-incentives/components/BaseButton.vue";
+import ChoicesListbox from "@/plugins/quicksnap-incentives/components/ChoicesListbox.vue";
 
 
-const { connectedChain } = useConnectButton();
-
-// export default {
-//   name:"ModalSnapshotIncentive"
-// };
+const { connectedChain, getChainInfo } = useConnectButton();
 
 const DEFAULT_TOKEN = {
   name: '',
@@ -72,7 +71,7 @@ async function addReward() {
     return;
   }
 
-  if (token.value.price == 0) {
+  if (token.value.price == 0 && import.meta.env.VITE_ENV !== 'develop') {
     tokenError.value.message =
       'this token is not supported as incentives token';
     isApproved.value = false;
@@ -122,9 +121,9 @@ async function checkAllowance() {
       return;
     }
 
-    if (token.value.price == 0) {
+    if (token.value.price == 0 && import.meta.env.VITE_ENV !== 'develop') {
       tokenError.value.message =
-        'this token is not supported as incentives token';
+        'This token is not available on the blockchain you are using';
       isApproved.value = false;
       return;
     }
@@ -140,7 +139,7 @@ async function checkAllowance() {
 
     const allowance = await getRawAllowance(
       rewardToken.value,
-      import.meta.env.VITE_QUICKSNAP_ADDRESS
+      getChainInfo().quicksnapAddress
     );
 
     const balance = await getRawTokenBalance(rewardToken.value);
@@ -186,7 +185,7 @@ async function approve() {
   try {
     isApproved.value = await approveToken(
       rewardToken.value,
-      import.meta.env.VITE_QUICKSNAP_ADDRESS
+      getChainInfo().quicksnapAddress
     );
     isApproveLoading.value = false;
     await checkAllowance();
@@ -215,7 +214,7 @@ async function getTokenInfo() {
   if (!success) {
     token.value.price = 0;
     tokenError.value.message =
-      'this token is not supported as incentives token';
+      'This token is not available on the blockchain you are using';
   } else {
     token.value.price = price;
 
@@ -227,9 +226,7 @@ async function getTokenInfo() {
       isTokenLoading.value = false;
     } else {
       try {
-        const provider = new JsonRpcProvider(
-          import.meta.env.VITE_WEB3_ENDPOINT
-        );
+        const provider = new JsonRpcProvider(getChainInfo().rpcUrl);
         const tokenInfo = await Promise.all([
           call(provider, ERC20ABI, [rewardToken.value, 'name', []]),
           call(provider, ERC20ABI, [rewardToken.value, 'symbol', []]),
@@ -238,7 +235,8 @@ async function getTokenInfo() {
         token.value.name = tokenInfo[0];
         token.value.symbol = tokenInfo[1];
         token.value.decimals = tokenInfo[2];
-      } catch {
+      } catch (e) {
+        console.log(e);
         tokenError.value.message = 'Token not found';
         token.value = clone(DEFAULT_TOKEN);
       } finally {
@@ -263,7 +261,9 @@ watch(
   [rewardToken],
   async () => {
     tokenError.value.message = '';
-    await getTokenInfo();
+    if (import.meta.env.VITE_ENV !== 'develop') {
+      await getTokenInfo();
+    }
     await checkAllowance();
   },
   { deep: true }
@@ -275,7 +275,9 @@ watch(
     tokenError.value.message = '';
     amountError.value.message = '';
     await checkAllowance();
-    checkMinimumAmount();
+    if (import.meta.env.VITE_ENV !== 'develop') {
+      checkMinimumAmount();
+    }
   },
   { deep: true }
 );
@@ -324,7 +326,7 @@ const toggleAllOptions = () => {
             :disabled="token.name === ''"
             class="primary mt-4"
             @click="setMax()"
-            >Max
+          >Max
           </BaseButton>
         </div>
 
@@ -363,9 +365,11 @@ const toggleAllOptions = () => {
             <div class="flex items-center">
               <BaseLink
                 class="text-skin-text hover:text-skin-link"
-                :link="`https://etherscan.io/token/${rewardToken}`"
+                :link="`${
+                  getChainInfo().explorerBase || 'https://etherscan.io/'
+                }token/${rewardToken}`"
               >
-                {{ $t('setup.strategy.tokenVoting.seeOnEtherscan') }}
+                See on explorer
               </BaseLink>
             </div>
           </div>
@@ -386,18 +390,18 @@ const toggleAllOptions = () => {
         </BaseMessageBlock>
         <BaseButton
           :disabled="
-            !supportedChain.get(parseInt(connectedChain?.id || '0', 16)) ||
+            !supportedChain.get(parseInt(connectedChain?.id || '-1', 16)) ||
             isApproved ||
             tokenError.message !== ''
           "
           :loading="isApproveLoading"
           class="primary mr-4 mt-4"
           @click="approve()"
-          >Approve token
+        >Approve token
         </BaseButton>
         <BaseButton
           :disabled="
-            !supportedChain.get(parseInt(connectedChain?.id || '0', 16)) ||
+            !supportedChain.get(parseInt(connectedChain?.id || '-1', 16)) ||
             !isApproved ||
             tokenError.message !== '' ||
             amountError.message !== '' ||
@@ -406,7 +410,7 @@ const toggleAllOptions = () => {
           :loading="isRewardLoading"
           class="primary ml-4 mt-4"
           @click="addReward()"
-          >Add Incentive
+        >Add Incentive
         </BaseButton>
       </BaseContainer>
     </template>

@@ -15,3 +15,14 @@ export const PROPOSAL_REDUCED_QUERY = gql`
   }
 `;
 
+export const TOKEN_DATA_FOR_CHAIN = gql`
+    query TokenDataForChain($token: String!, $chainName: String!) {
+        tokenDataForChain(token: $token, chainName: $chainName) {
+            logo
+            name
+            price
+            symbol
+        }
+    }
+`;
+

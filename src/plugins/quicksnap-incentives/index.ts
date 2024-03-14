@@ -1,5 +1,5 @@
 export default class Plugin {
-  public author = 'nick';
+  public author = 'QuickSnap';
   public version = '0.1.0';
-  public name = 'incentives';
+  public name = 'quicksnap-incentives';
 }

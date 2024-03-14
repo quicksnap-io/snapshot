@@ -6,10 +6,9 @@ import { tokenData } from './quicksnapContracts';
 import erc20 from '../abi/erc20.json';
 import merkle from '../abi/merkle.json';
 import {useConnectButton} from "../composables/onboard"
+import { API_ENDPOINT } from "@/plugins/quicksnap-incentives/helpers/constants";
 
-
-const MERKLE_ADDRESS = import.meta.env.VITE_MERKLE_ADDRESS;
-const { ethersProvider, userAddress } = useConnectButton();
+const { ethersProvider, userAddress, connectedChain, getChainInfo } = useConnectButton();
 
 export async function getRewards() {
   try {
@@ -18,27 +17,30 @@ export async function getRewards() {
 
     if (userAddress.value) {
       const client = new ApolloClient({
-        uri: `${import.meta.env.VITE_API_ENDPOINT}/graphql`,
+        uri: `${API_ENDPOINT}/graphql`,
         cache: new InMemoryCache()
       });
 
       const claimsQuery = gql`
-        query rewarderewards($account: String!) {
-          claims(account: $account) {
-            token
-            index
-            amount
-            merkleProof
+          query rewarderewards($account: String!, $chainId: Int!) {
+              claims(account: $account, chainId: $chainId) {
+                  token
+                  index
+                  amount
+                  merkleProof
+              }
+              claimInfo {
+                  totalBalance
+                  totalClaimed
+              }
           }
-          claimInfo {
-            totalBalance
-            totalClaimed
-          }
-        }
       `;
       const { data } = await client.query({
         query: claimsQuery,
-        variables: { account: userAddress.value }
+        variables: {
+          account: userAddress.value,
+          chainId: parseInt(connectedChain.value?.id || '0', 16)
+        }
       });
       claimInfo = data.claimInfo;
 
@@ -74,10 +76,10 @@ export async function getRewards() {
 
 export async function getTokenInfo(tokenAddress): Promise<
   | {
-      address: string;
-      symbol: string;
-      decimals: number;
-    }
+  address: string;
+  symbol: string;
+  decimals: number;
+}
   | undefined
 > {
   try {
@@ -107,10 +109,10 @@ export async function getTokenInfo(tokenAddress): Promise<
 
 export async function getTokenNameBalance(tokenAddress): Promise<
   | {
-      name: string;
-      symbol: string;
-      balance: number;
-    }
+  name: string;
+  symbol: string;
+  balance: number;
+}
   | undefined
 > {
   try {
@@ -144,8 +146,9 @@ export async function claimReward(reward) {
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   const signer = ethersProvider.value.getSigner();
+  const { merkleAddress } = getChainInfo();
   const merkleContract = await new ethers.Contract(
-    MERKLE_ADDRESS,
+    merkleAddress,
     merkle.abi,
     signer
   );
@@ -177,11 +180,8 @@ export async function claimAllRewards(rewards) {
     });
   }
 
-  const merkleContract = new ethers.Contract(
-    MERKLE_ADDRESS,
-    merkle.abi,
-    signer
-  );
+  const { merkleAddress } = getChainInfo();
+  const merkleContract = new ethers.Contract(merkleAddress, merkle.abi, signer);
   const tx = await merkleContract.claimMulti(userAddress.value, claims);
   await tx.wait(1);
   console.log(tx);

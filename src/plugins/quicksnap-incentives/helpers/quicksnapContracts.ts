@@ -1,189 +1,59 @@
-import { ApolloClient, InMemoryCache } from '@apollo/client/core';
-import { BigNumber } from '@ethersproject/bignumber';
-import angleGauge from '../abi/angleGauge.json';
-import bribeV3 from '../abi/bribev3.json';
-import quicksnap from '../abi/QuickSnap.json';
 import erc20 from '../abi/erc20.json';
-import gauge from '../abi/gauge.json';
-import { getContractName } from './etherscan';
+import quicksnap from '../abi/QuickSnap.json';
 import { getTokenInfo } from './rewards';
+import { ApolloClient, InMemoryCache } from '@apollo/client/core';
 import { ethers } from 'ethers';
-import GaugeNames from '../config/GaugeNames.json';
-import { PROPOSAL_REDUCED_QUERY } from './queries';
+import {
+  PROPOSAL_REDUCED_QUERY,
+  TOKEN_DATA_FOR_CHAIN
+} from './queries';
 import {
   CURRENT_SNAPSHOT_INCENTIVES,
   INCENTIVES_BY_PROPOSAL_QUERY
 } from './graphQueries';
 import { addIncentiveFee } from './utils';
-import {useConnectButton} from "../composables/onboard"
+import {useConnectButton} from "@/plugins/quicksnap-incentives/composables/onboard";
+import { API_ENDPOINT } from "@/plugins/quicksnap-incentives/helpers/constants";
 
-
-const { userAddress, ethersProvider } = useConnectButton();
-
-const client = new ApolloClient({
-  uri: `${import.meta.env.VITE_API_ENDPOINT}/graphql`,
-  cache: new InMemoryCache()
-});
+const { userAddress, ethersProvider, getChainInfo } = useConnectButton();
 
 const snapshotClient = new ApolloClient({
   uri: `${import.meta.env.VITE_HUB_URL}/graphql`,
   cache: new InMemoryCache()
 });
 
-const graphClient = new ApolloClient({
-  uri: `${import.meta.env.VITE_GRAPH_ENDPOINT}`,
+let graphClient = new ApolloClient({
+  uri: getChainInfo().graphEndpoint,
   cache: new InMemoryCache()
 });
 
-export async function getGaugeInfo(
-  projectName,
-  bribeAddress,
-  gaugeAddress,
-  gaugeController,
-  index
-) {
-  try {
-    const bribeContract = new ethers.Contract(
-      bribeAddress,
-      bribeV3.abi,
-      ethersProvider.value
-    );
-    // eslint-disable-next-line prefer-const
-    let [gaugeType, gaugeWeight, rewards] = await Promise.all([
-      gaugeController.gauge_types(gaugeAddress),
-      gaugeController.get_gauge_weight(gaugeAddress),
-      bribeContract.rewards_per_gauge(gaugeAddress)
-    ]);
+const backendClient = new ApolloClient({
+  uri: `${API_ENDPOINT}/graphql`,
+  cache: new InMemoryCache()
+});
 
-    console.log(gaugeType.toString());
-
-    gaugeWeight = parseFloat(ethers.utils.formatUnits(gaugeWeight, 18));
-
-    //calculate total dollar amounts
-    const period = getActivePeriod();
-    let totalRewards = 0;
-    for (let i = 0; i < rewards.length; i++) {
-      const token = new ethers.Contract(
-        rewards[i],
-        erc20.abi,
-        ethersProvider.value
-      );
-      const decimals = BigNumber.from(await token.decimals()).toNumber();
-      const rawBribeAmount = ethers.utils.formatUnits(
-        await bribeContract._reward_per_gauge(period, gaugeAddress, rewards[i]),
-        decimals
-      );
-      // include fee in amount
-      const bribeAmount = addIncentiveFee(parseFloat(rawBribeAmount));
-      console.log(rewards[i], bribeAmount);
-      const { price } = await tokenData(rewards[i]);
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore
-      const dollarAmount = bribeAmount * price;
-      totalRewards += dollarAmount;
-    }
-
-    const dollarsPerVote = gaugeWeight > 0 ? totalRewards / gaugeWeight : 0;
-
-    let name = 'Unknown';
-    let tokenAddress = '';
-
-    if (['0', '5', '6'].includes(gaugeType.toString())) {
-      switch (projectName) {
-        case 'FRAX': {
-          try {
-            name = await getContractName(gaugeAddress);
-          } catch (e) {
-            console.log(e);
-          }
-          break;
-        }
-        case 'ANGLE': {
-          const gaugeContract = new ethers.Contract(
-            gaugeAddress,
-            angleGauge.abi,
-            ethersProvider.value
-          );
-          tokenAddress = await gaugeContract.staking_token();
-          const lpToken = new ethers.Contract(
-            tokenAddress,
-            erc20.abi,
-            ethersProvider.value
-          );
-          name = await lpToken.name();
-          break;
-        }
-        default: {
-          const gaugeContract = new ethers.Contract(
-            gaugeAddress,
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            gauge.abi,
-            ethersProvider.value
-          );
-          tokenAddress = await gaugeContract.lp_token();
-          const lpToken = new ethers.Contract(
-            tokenAddress,
-            erc20.abi,
-            ethersProvider.value
-          );
-          name = await lpToken.name();
-          break;
-        }
-      }
-    }
-
-    if (name === 'Unknown') {
-      //get gauge name from config file
-      const item = GaugeNames.find(({ address }) => address === gaugeAddress);
-      if (item) {
-        name = item.name;
-      }
-    }
-
-    return {
-      gaugeName: name,
-      gaugeWeight: gaugeWeight,
-      totalRewards,
-      dollarsPerVote,
-      gaugeType
-    };
-  } catch (ex) {
-    console.log('------------------------------------');
-    console.log(
-      `exception thrown in getGaugeInfo(${gaugeController}, ${index})`
-    );
-    console.log(ex);
-    console.log('------------------------------------');
-    return null;
+function updateGraphEndpoint() {
+  const chainData = getChainInfo();
+  if (chainData?.graphEndpoint) {
+    graphClient = new ApolloClient({
+      uri: chainData.graphEndpoint,
+      cache: new InMemoryCache()
+    });
   }
-}
-
-export function getActivePeriod() {
-  const WEEK = BigNumber.from(86400).mul(7);
-  const date = Math.floor(new Date().getTime() / 1000);
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  return Math.floor(date / WEEK) * WEEK;
 }
 
 export async function tokenData(token) {
   let success = false;
+  const chainName = getChainInfo()?.coingeckoID || 'ethereum';
   try {
-    const url = `https://api.coingecko.com/api/v3/coins/ethereum/contract/${token}?x_cg_demo_api_key=${
-      import.meta.env.VITE_COINGECKO_API_KEY
-    }`;
-
-    const response = await fetch(url);
-    const body = await response.json();
+    let { data } = await backendClient.query({
+      query: TOKEN_DATA_FOR_CHAIN,
+      variables: { token, chainName }
+    });
+    console.log('data', data.tokenDataForChain);
     const decimals = await getDecimals(token);
-    const data = {
-      price: body.market_data ? body.market_data.current_price.usd : 0,
-      logo: body.image ? body.image.large : null,
-      name: body.name,
-      symbol: body.symbol,
-      decimals: decimals
-    };
+    data = { ...data.tokenDataForChain, decimals };
+
     if (data.price > 0) {
       success = true;
     }
@@ -201,28 +71,6 @@ export async function tokenData(token) {
   }
 }
 
-export async function addRewardAmount(
-  bribeAddress,
-  gaugeAddress,
-  rewardAmount,
-  rewardToken
-) {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  const signer = ethersProvider.value.getSigner();
-  const token = new ethers.Contract(rewardToken, erc20.abi, signer);
-  const decimals = await token.decimals();
-  const amount = ethers.utils.parseUnits(rewardAmount.toString(), decimals);
-
-  const bribeContract = new ethers.Contract(bribeAddress, bribeV3.abi, signer);
-  const tx = await bribeContract.add_reward_amount(
-    gaugeAddress,
-    rewardToken,
-    amount
-  );
-  console.log(tx);
-}
-
 export async function addSnapshotRewardAmount(
   proposal,
   option,
@@ -237,23 +85,25 @@ export async function addSnapshotRewardAmount(
   const token = new ethers.Contract(rewardToken, erc20.abi, signer);
   const decimals = await token.decimals();
   const amount = ethers.utils.parseUnits(rewardAmount.toString(), decimals);
-  const quicksnapAddress = import.meta.env.VITE_QUICKSNAP_ADDRESS;
+  const quicksnapAddress = getChainInfo()?.quicksnapAddress;
 
-  const bribeContract = new ethers.Contract(
-    quicksnapAddress,
-    quicksnap.abi,
-    signer
-  );
-  const tx = await bribeContract.add_reward_amount(
-    proposal,
-    option,
-    rewardToken,
-    amount,
-    start,
-    end
-  );
-  await tx.wait(1);
-  console.log(tx);
+  if (quicksnapAddress) {
+    const bribeContract = new ethers.Contract(
+      quicksnapAddress,
+      quicksnap.abi,
+      signer
+    );
+    const tx = await bribeContract.add_reward_amount(
+      proposal,
+      option,
+      rewardToken,
+      amount,
+      start,
+      end
+    );
+    await tx.wait(1);
+    console.log(tx);
+  }
 }
 
 export async function getAllowance(tokenAddress, quicksnapAddress) {
@@ -281,13 +131,18 @@ export async function getRawAllowance(tokenAddress, quicksnapAddress) {
 }
 
 export async function getTokenBalance(tokenAddress) {
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  const signer = ethersProvider.value.getSigner();
-  const token = new ethers.Contract(tokenAddress, erc20.abi, signer);
-  const balance = await token.balanceOf(await signer.getAddress());
-  const decimals = await token.decimals();
-  return ethers.utils.formatUnits(balance, decimals);
+  try {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const signer = ethersProvider.value.getSigner();
+    const token = new ethers.Contract(tokenAddress, erc20.abi, signer);
+    const balance = await token.balanceOf(await signer.getAddress());
+    const decimals = await token.decimals();
+    return ethers.utils.formatUnits(balance, decimals);
+  } catch (e) {
+    console.log(e);
+    return '0';
+  }
 }
 
 export async function getRawTokenBalance(tokenAddress) {
@@ -305,22 +160,6 @@ export async function getDecimals(tokenAddress) {
   const token = new ethers.Contract(tokenAddress, erc20.abi, signer);
   const decimals = await token.decimals();
   return parseInt(decimals);
-}
-
-export async function isERC20(tokenAddress) {
-  try {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    const signer = ethersProvider.value.getSigner();
-    const token = new ethers.Contract(tokenAddress, erc20.abi, signer);
-
-    const totalSupply = await token.callStatic.totalSupply();
-    console.log(totalSupply);
-    return true;
-  } catch (e) {
-    console.log(e);
-    return false;
-  }
 }
 
 export async function approveToken(tokenAddress, quicksnapAddress) {
@@ -361,6 +200,7 @@ export async function approveToken(tokenAddress, quicksnapAddress) {
 export async function getActiveSnapshotIncentives() {
   const activeSnapshotIncentives = [];
   try {
+    updateGraphEndpoint();
     const { data } = await graphClient.query({
       query: CURRENT_SNAPSHOT_INCENTIVES,
       variables: { time: Math.floor(Date.now() / 1000), skip: 0 }
@@ -404,6 +244,7 @@ export async function getActiveSnapshotIncentives() {
 export async function getIncentivesForProposal(proposal, choices) {
   const incentivizedChoices = [];
   try {
+    updateGraphEndpoint();
     const { data } = await graphClient.query({
       query: INCENTIVES_BY_PROPOSAL_QUERY,
       variables: { id: proposal }

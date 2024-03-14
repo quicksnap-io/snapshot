@@ -33,7 +33,6 @@ export function getDecimals(amount) {
   return 0;
 }
 
-
 export function addIncentiveFee(amount) {
   const decimals = getDecimals(amount);
 

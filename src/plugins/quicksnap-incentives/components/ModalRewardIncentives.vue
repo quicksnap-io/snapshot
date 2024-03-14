@@ -5,6 +5,7 @@ import { getRewards, claimReward, claimAllRewards } from '../helpers/rewards';
 import { supportedChain } from '../helpers/supportedChains';
 import { useConnectButton } from '../composables/onboard';
 import { useWindowSize } from '@vueuse/core';
+import BaseButton from "@/plugins/quicksnap-incentives/components/BaseButton.vue";
 // Define props
 const props = defineProps({
   open: Boolean
@@ -15,6 +16,8 @@ const emit = defineEmits(['close']);
 const { open } = toRefs(props);
 
 const { height } = useWindowSize();
+
+const hideClose = ref(false);
 
 const heightStyle = computed(() => {
   return `${height.value}px !important`;
