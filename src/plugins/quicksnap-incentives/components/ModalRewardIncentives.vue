@@ -239,7 +239,7 @@ onUnmounted(() => {
                   </BaseBlock>
                 </div>
               </TransitionGroup>
-              <ExploreSkeletonLoading  is-spaces />
+              <ExploreSkeletonLoading v-if="state.rewardsLoading" is-spaces />
               <BaseNoResults
                 v-if="state.rewards.length < 1 && !state.rewardsLoading"
                 custom-text="No Rewards found"
@@ -312,6 +312,7 @@ onUnmounted(() => {
     max-width: 75%;
     overflow-y: auto !important;
     max-height: calc(100vh - 120px);
+    height: calc(100vh - 200px);
     display: flex;
     flex-direction: column;
     z-index: 999;
