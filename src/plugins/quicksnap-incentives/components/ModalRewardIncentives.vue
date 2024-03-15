@@ -181,7 +181,7 @@ onUnmounted(() => {
               </div>
             </BaseContainer>
 
-            <BaseContainer class="mt-4" :slim="true">
+            <BaseContainer class="mt-4 max_width_90" :slim="true">
               <TransitionGroup
                 v-if="!state.rewardsLoading"
                 name="fade"
@@ -239,7 +239,7 @@ onUnmounted(() => {
                   </BaseBlock>
                 </div>
               </TransitionGroup>
-              <ExploreSkeletonLoading v-if="state.rewardsLoading" is-spaces />
+              <ExploreSkeletonLoading  is-spaces />
               <BaseNoResults
                 v-if="state.rewards.length < 1 && !state.rewardsLoading"
                 custom-text="No Rewards found"
