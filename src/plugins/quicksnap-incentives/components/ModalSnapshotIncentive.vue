@@ -390,7 +390,7 @@ const toggleAllOptions = () => {
         </BaseMessageBlock>
         <BaseButton
           :disabled="
-            !supportedChain.get(parseInt(connectedChain?.id || '-1', 16)) ||
+            !supportedChain.get(parseInt(connectedChain?.id || '0', 16)) ||
             isApproved ||
             tokenError.message !== ''
           "
@@ -401,7 +401,7 @@ const toggleAllOptions = () => {
         </BaseButton>
         <BaseButton
           :disabled="
-            !supportedChain.get(parseInt(connectedChain?.id || '-1', 16)) ||
+            !supportedChain.get(parseInt(connectedChain?.id || '0', 16)) ||
             !isApproved ||
             tokenError.message !== '' ||
             amountError.message !== '' ||
