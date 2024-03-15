@@ -5,7 +5,7 @@ import { getRewards, claimReward, claimAllRewards } from '../helpers/rewards';
 import { supportedChain } from '../helpers/supportedChains';
 import { useConnectButton } from '../composables/onboard';
 import { useWindowSize } from '@vueuse/core';
-import BaseButton from "@/plugins/quicksnap-incentives/components/BaseButton.vue";
+import BaseButton from '@/plugins/quicksnap-incentives/components/BaseButton.vue';
 // Define props
 const props = defineProps({
   open: Boolean
@@ -113,11 +113,13 @@ onUnmounted(() => {
   <Transition name="fade">
     <div v-if="open" class="rewards_modal z-50 mx-auto w-screen">
       <div class="rewards_backdrop" @click="emit('close')" />
-      <div class="rewards_shell relative overflow-hidden rounded-none md:rounded-3xl">
+      <div
+        class="rewards_shell relative overflow-hidden rounded-none md:rounded-3xl"
+      >
         <div class="pt-3 text-center">
           <h1>Claim rewards</h1>
         </div>
-        <div class="rewards_modal-body">
+        <div class="rewards_modal_body">
           <BaseContainer class="base_container p-2">
             <div class="">
               <p>
@@ -145,7 +147,7 @@ onUnmounted(() => {
             <div>
               <BaseBlock class="p-2" :slim="true">
                 <BaseContainer
-                  class="flex flex-col flex-wrap items-center text-[24px] xs:flex-row md:flex-nowrap"
+                  class="flex flex-col flex-wrap items-center text-[24px] xs:flex-row md:flex-nowrap max_width_90"
                 >
                   Yours to claim:
                   <div class="pl-1 text-white">
@@ -307,7 +309,7 @@ onUnmounted(() => {
     background-color: var(--bg-color);
     padding-left: 0 !important;
     padding-right: 0 !important;
-    max-width: 60%;
+    max-width: 75%;
     overflow-y: auto !important;
     max-height: calc(100vh - 120px);
     display: flex;
@@ -316,6 +318,17 @@ onUnmounted(() => {
     margin: 0 auto;
     width: 100%;
 
+    .rewards_modal_body {
+      max-height: v-bind(maxHeight);
+      flex: auto;
+      text-align: initial;
+      overflow-y: auto;
+      overflow-x: hidden;
+      .base_container,
+      .max_width_90 {
+        max-width: 90% !important;
+      }
+    }
     @media (max-width: 767px) {
       border: 0;
       width: 100% !important;
@@ -325,17 +338,9 @@ onUnmounted(() => {
       min-height: v-bind(heightStyle);
       margin-bottom: 0 !important;
 
-      .rewards_modal-body {
+      .rewards_modal_body {
         max-height: 100% !important;
       }
-    }
-
-    .rewards_modal-body {
-      max-height: v-bind(maxHeight);
-      flex: auto;
-      text-align: initial;
-      overflow-y: auto;
-      overflow-x: hidden;
     }
   }
 }
