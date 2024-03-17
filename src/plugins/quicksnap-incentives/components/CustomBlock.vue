@@ -179,7 +179,7 @@ onMounted(() => setMessageVisibility(props.proposal.flagged));
         </div>
       </div>
       <BaseButton class="block w-full" primary @click="openIncentiveModal()"
-      :disabled="!supportedChain.get(parseInt(connectedChain?.id || '0', 16))"
+      :disabled="!supportedChain.get(parseInt(connectedChain?.id || '0', 16)) || props.proposal.state !== 'active'"
         >Add Incentive
       </BaseButton>
       <br />
